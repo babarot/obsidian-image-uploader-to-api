@@ -49,6 +49,10 @@ Response: `{"url": "https://example.com/files/image.png", "size": 204800}`
 | Image URL Path | `data.link` |
 | Headers | `Authorization` = `Client-ID your-client-id` |
 
+## Network Usage
+
+This plugin sends image files over the network to the API endpoint you configure in the settings. No data is sent to any service unless you explicitly set an endpoint. The plugin itself does not collect any telemetry or analytics.
+
 ## Installation
 
 ### From Community Plugins (Recommended)
@@ -59,7 +63,7 @@ Response: `{"url": "https://example.com/files/image.png", "size": 204800}`
 
 ### Manual
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/babarot/obsidian-image-uploader/releases)
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/babarot/obsidian-image-uploader-to-api/releases)
 2. Create a folder `image-uploader-to-api` in your vault's `.obsidian/plugins/` directory
 3. Place the downloaded files into that folder
 4. Enable the plugin in **Settings** → **Community plugins**
