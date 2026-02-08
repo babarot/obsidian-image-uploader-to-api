@@ -1,0 +1,10 @@
+{
+	"id": "image-uploader-to-api",
+	"name": "Image Uploader to API",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Upload images to any API endpoint on drag & drop or paste, and insert the public URL as Markdown.",
+	"author": "babarot",
+	"authorUrl": "https://github.com/babarot",
+	"isDesktopOnly": false
+}
