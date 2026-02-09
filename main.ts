@@ -10,6 +10,7 @@ interface ImageUploaderSettings {
 	headers: HeaderEntry[];
 	fileFieldName: string;
 	imageUrlPath: string;
+	enablePdfUpload: boolean;
 }
 
 const DEFAULT_SETTINGS: ImageUploaderSettings = {
@@ -17,14 +18,14 @@ const DEFAULT_SETTINGS: ImageUploaderSettings = {
 	headers: [],
 	fileFieldName: "file",
 	imageUrlPath: "",
+	enablePdfUpload: false,
 };
 
 const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "svg", "avif", "ico"];
-const SUPPORTED_EXTENSIONS = [...IMAGE_EXTENSIONS, "pdf"];
 
-function isSupportedFile(file: File): boolean {
+function isPdfFile(file: File): boolean {
 	const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-	return SUPPORTED_EXTENSIONS.includes(ext);
+	return ext === "pdf";
 }
 
 function isImageFile(file: File): boolean {
@@ -45,12 +46,18 @@ function getByPath(obj: unknown, path: string): unknown {
 export default class ImageUploaderPlugin extends Plugin {
 	settings: ImageUploaderSettings = DEFAULT_SETTINGS;
 
+	private filterUploadable = (file: File): boolean => {
+		if (isImageFile(file)) return true;
+		if (isPdfFile(file) && this.settings.enablePdfUpload) return true;
+		return false;
+	};
+
 	private dropHandler = (evt: DragEvent): void => {
 		const files = evt.dataTransfer?.files;
 		if (!files || files.length === 0) return;
 
-		const imageFiles = Array.from(files).filter(isSupportedFile);
-		if (imageFiles.length === 0) return;
+		const uploadable = Array.from(files).filter(this.filterUploadable);
+		if (uploadable.length === 0) return;
 
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) return;
@@ -58,15 +65,15 @@ export default class ImageUploaderPlugin extends Plugin {
 		evt.preventDefault();
 		evt.stopPropagation();
 
-		void this.uploadFiles(imageFiles, view.editor);
+		void this.uploadFiles(uploadable, view.editor);
 	};
 
 	private pasteHandler = (evt: ClipboardEvent): void => {
 		const files = evt.clipboardData?.files;
 		if (!files || files.length === 0) return;
 
-		const imageFiles = Array.from(files).filter(isSupportedFile);
-		if (imageFiles.length === 0) return;
+		const uploadable = Array.from(files).filter(this.filterUploadable);
+		if (uploadable.length === 0) return;
 
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) return;
@@ -74,7 +81,7 @@ export default class ImageUploaderPlugin extends Plugin {
 		evt.preventDefault();
 		evt.stopPropagation();
 
-		void this.uploadFiles(imageFiles, view.editor);
+		void this.uploadFiles(uploadable, view.editor);
 	};
 
 	async onload() {
@@ -226,6 +233,18 @@ class ImageUploaderSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.imageUrlPath)
 					.onChange(async (value) => {
 						this.plugin.settings.imageUrlPath = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Upload PDF files")
+			.setDesc("When enabled, PDF files are uploaded to the API and inserted as a link. When disabled, PDFs are handled by Obsidian's default behavior.")
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.enablePdfUpload)
+					.onChange(async (value) => {
+						this.plugin.settings.enablePdfUpload = value;
 						await this.plugin.saveSettings();
 					})
 			);
