@@ -49,6 +49,18 @@ Response: `{"url": "https://example.com/files/image.png", "size": 204800}`
 | Image URL Path | `data.link` |
 | Headers | `Authorization` = `Client-ID your-client-id` |
 
+## Comparison with Image Uploader
+
+This plugin is inspired by [Image Uploader](https://github.com/Creling/obsidian-image-uploader) but addresses several limitations:
+
+| | Image Uploader to API | Image Uploader |
+|---|---|---|
+| Drag & Drop | Yes | No (paste only) |
+| Multiple images at once | Yes (parallel upload) | No (single file only) |
+| Header configuration | Key-value UI | Raw JSON textarea |
+| HTTP client | Obsidian `requestUrl` (no CORS issues) | axios |
+| External dependencies | None | axios, object-path, compressorjs |
+
 ## Network Usage
 
 This plugin sends image files over the network to the API endpoint you configure in the settings. No data is sent to any service unless you explicitly set an endpoint. The plugin itself does not collect any telemetry or analytics.
