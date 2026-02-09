@@ -14,9 +14,12 @@ An [Obsidian](https://obsidian.md) plugin that uploads images to any API endpoin
 
 ## Supported Formats
 
-`.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.svg`, `.avif`, `.ico`
+**Images:** `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.svg`, `.avif`, `.ico`
+**Documents:** `.pdf`
 
-Non-image files are left to Obsidian's default behavior.
+Images are inserted as `![](url)`, PDFs are inserted as `[filename](url)`.
+
+Unsupported file types are left to Obsidian's default behavior.
 
 ## Settings
 

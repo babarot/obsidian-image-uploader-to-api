@@ -20,6 +20,12 @@ const DEFAULT_SETTINGS: ImageUploaderSettings = {
 };
 
 const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "svg", "avif", "ico"];
+const SUPPORTED_EXTENSIONS = [...IMAGE_EXTENSIONS, "pdf"];
+
+function isSupportedFile(file: File): boolean {
+	const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+	return SUPPORTED_EXTENSIONS.includes(ext);
+}
 
 function isImageFile(file: File): boolean {
 	const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -43,7 +49,7 @@ export default class ImageUploaderPlugin extends Plugin {
 		const files = evt.dataTransfer?.files;
 		if (!files || files.length === 0) return;
 
-		const imageFiles = Array.from(files).filter(isImageFile);
+		const imageFiles = Array.from(files).filter(isSupportedFile);
 		if (imageFiles.length === 0) return;
 
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -59,7 +65,7 @@ export default class ImageUploaderPlugin extends Plugin {
 		const files = evt.clipboardData?.files;
 		if (!files || files.length === 0) return;
 
-		const imageFiles = Array.from(files).filter(isImageFile);
+		const imageFiles = Array.from(files).filter(isSupportedFile);
 		if (imageFiles.length === 0) return;
 
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -100,7 +106,8 @@ export default class ImageUploaderPlugin extends Plugin {
 		try {
 			const url = await this.upload(file);
 			const content = editor.getValue();
-			const newContent = content.replace(placeholder, `![](${url})`);
+			const markdown = isImageFile(file) ? `![](${url})` : `[${file.name}](${url})`;
+			const newContent = content.replace(placeholder, markdown);
 			editor.setValue(newContent);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
