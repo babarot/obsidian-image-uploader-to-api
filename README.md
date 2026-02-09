@@ -17,7 +17,11 @@ An [Obsidian](https://obsidian.md) plugin that uploads images to any API endpoin
 **Images:** `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.svg`, `.avif`, `.ico`
 **Documents:** `.pdf` (opt-in via settings)
 
-Images are inserted as `![](url)`. PDFs are inserted as `[filename](url)` when the **Upload PDF files** setting is enabled. When disabled, PDFs fall back to Obsidian's default behavior.
+Images are inserted as `![](url)`. PDF handling is controlled by the **PDF handling** setting:
+
+- **Save locally** — Obsidian's default behavior (saved to vault attachment folder)
+- **Always upload to API** — Uploaded and inserted as `[filename](url)`
+- **Ask each time** — A dialog asks whether to upload or save locally
 
 Unsupported file types are left to Obsidian's default behavior.
 
@@ -28,7 +32,7 @@ Unsupported file types are left to Obsidian's default behavior.
 | **API Endpoint** | The URL to POST the image to |
 | **File Field Name** | The `multipart/form-data` field name for the file (e.g. `file`, `image`) |
 | **Image URL Path** | Dot-notation path to extract the URL from the JSON response (e.g. `url`, `data.link`) |
-| **Upload PDF files** | When enabled, PDF files are uploaded to the API and inserted as a link (default: off) |
+| **PDF handling** | Choose how PDFs are handled: save locally (default), always upload, or ask each time |
 | **HTTP Headers** | Key-value pairs sent with the request (e.g. `X-API-Key`, `Authorization`) |
 
 ## Examples
