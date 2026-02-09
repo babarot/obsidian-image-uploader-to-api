@@ -249,7 +249,7 @@ class ImageUploaderSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName("Upload API settings")
+			.setName("Upload API")
 			.setHeading();
 
 		new Setting(containerEl)
@@ -267,10 +267,10 @@ class ImageUploaderSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("File field name")
-			.setDesc("The form field name for the uploaded file (e.g. file, image)")
+			.setDesc("The form field name for the uploaded file, such as file or image")
 			.addText((text) =>
 				text
-					.setPlaceholder("file")
+					.setPlaceholder("File")
 					.setValue(this.plugin.settings.fileFieldName)
 					.onChange(async (value) => {
 						this.plugin.settings.fileFieldName = value;
@@ -282,15 +282,15 @@ class ImageUploaderSettingTab extends PluginSettingTab {
 			.setName("Image URL path")
 			.setDesc(createFragment((el) => {
 				el.appendText("Dot-notation path to extract the image URL from the JSON response, e.g. ");
-				el.createEl("code", { text: "url" });
+				el.createEl("code").appendText("url");
 				el.appendText(", ");
-				el.createEl("code", { text: "data.link" });
+				el.createEl("code").appendText("data.link");
 				el.appendText(", ");
-				el.createEl("code", { text: "response.data.url" });
+				el.createEl("code").appendText("response.data.url");
 			}))
 			.addText((text) =>
 				text
-					.setPlaceholder("url")
+					.setPlaceholder("URL")
 					.setValue(this.plugin.settings.imageUrlPath)
 					.onChange(async (value) => {
 						this.plugin.settings.imageUrlPath = value;
