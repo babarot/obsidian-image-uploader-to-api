@@ -67,6 +67,7 @@ This plugin is inspired by [Image Uploader](https://github.com/Creling/obsidian-
 | Multiple images at once | Yes (parallel upload) | No (single file only) |
 | Header configuration | Key-value UI | Raw JSON textarea |
 | HTTP client | Obsidian `requestUrl` (no CORS issues) | axios |
+| PDF upload support | Yes (configurable) | No |
 | External dependencies | None | axios, object-path, compressorjs |
 
 ## Network Usage
