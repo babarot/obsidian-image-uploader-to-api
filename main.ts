@@ -52,7 +52,7 @@ export default class ImageUploaderPlugin extends Plugin {
 		evt.preventDefault();
 		evt.stopPropagation();
 
-		this.uploadFiles(imageFiles, view.editor);
+		void this.uploadFiles(imageFiles, view.editor);
 	};
 
 	private pasteHandler = (evt: ClipboardEvent): void => {
@@ -68,7 +68,7 @@ export default class ImageUploaderPlugin extends Plugin {
 		evt.preventDefault();
 		evt.stopPropagation();
 
-		this.uploadFiles(imageFiles, view.editor);
+		void this.uploadFiles(imageFiles, view.editor);
 	};
 
 	async onload() {
@@ -87,9 +87,9 @@ export default class ImageUploaderPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	private uploadFiles(files: File[], editor: Editor) {
+	private async uploadFiles(files: File[], editor: Editor) {
 		for (const file of files) {
-			this.uploadFile(file, editor);
+			await this.uploadFile(file, editor);
 		}
 	}
 
@@ -173,10 +173,12 @@ class ImageUploaderSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "Upload API Settings" });
+		new Setting(containerEl)
+			.setName("Upload API settings")
+			.setHeading();
 
 		new Setting(containerEl)
-			.setName("API Endpoint")
+			.setName("API endpoint")
 			.setDesc("The URL of the upload API")
 			.addText((text) =>
 				text
@@ -189,7 +191,7 @@ class ImageUploaderSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("File Field Name")
+			.setName("File field name")
 			.setDesc("The form field name for the uploaded file (e.g. file, image)")
 			.addText((text) =>
 				text
@@ -202,10 +204,9 @@ class ImageUploaderSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Image URL Path")
+			.setName("Image URL path")
 			.setDesc(createFragment((el) => {
-				el.appendText("Dot-notation path to extract the image URL from the JSON response");
-				el.createEl("br");
+				el.appendText("Dot-notation path to extract the image URL from the JSON response, e.g. ");
 				el.createEl("code", { text: "url" });
 				el.appendText(", ");
 				el.createEl("code", { text: "data.link" });
@@ -222,8 +223,9 @@ class ImageUploaderSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// Headers section
-		containerEl.createEl("h2", { text: "HTTP Headers" });
+		new Setting(containerEl)
+			.setName("HTTP headers")
+			.setHeading();
 
 		for (let i = 0; i < this.plugin.settings.headers.length; i++) {
 			const entry = this.plugin.settings.headers[i];
@@ -265,7 +267,7 @@ class ImageUploaderSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.addButton((btn) =>
 				btn
-					.setButtonText("Add Header")
+					.setButtonText("Add header")
 					.setCta()
 					.onClick(async () => {
 						this.plugin.settings.headers.push({ key: "", value: "" });
