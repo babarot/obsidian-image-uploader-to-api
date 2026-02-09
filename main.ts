@@ -1,16 +1,18 @@
-import { Editor, MarkdownView, Notice, Plugin, PluginSettingTab, App, Setting, requestUrl } from "obsidian";
+import { Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, App, Setting, requestUrl } from "obsidian";
 
 interface HeaderEntry {
 	key: string;
 	value: string;
 }
 
+type PdfHandling = "default" | "upload" | "ask";
+
 interface ImageUploaderSettings {
 	apiEndpoint: string;
 	headers: HeaderEntry[];
 	fileFieldName: string;
 	imageUrlPath: string;
-	enablePdfUpload: boolean;
+	pdfHandling: PdfHandling;
 }
 
 const DEFAULT_SETTINGS: ImageUploaderSettings = {
@@ -18,7 +20,7 @@ const DEFAULT_SETTINGS: ImageUploaderSettings = {
 	headers: [],
 	fileFieldName: "file",
 	imageUrlPath: "",
-	enablePdfUpload: false,
+	pdfHandling: "default",
 };
 
 const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "svg", "avif", "ico"];
@@ -31,6 +33,41 @@ function isPdfFile(file: File): boolean {
 function isImageFile(file: File): boolean {
 	const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
 	return IMAGE_EXTENSIONS.includes(ext);
+}
+
+class PdfUploadModal extends Modal {
+	private resolve: (value: boolean) => void;
+
+	constructor(app: App, resolve: (value: boolean) => void) {
+		super(app);
+		this.resolve = resolve;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.createEl("p", { text: "How do you want to handle this PDF?" });
+
+		const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
+
+		buttonContainer
+			.createEl("button", { text: "Upload to API", cls: "mod-cta" })
+			.addEventListener("click", () => {
+				this.resolve(true);
+				this.close();
+			});
+
+		buttonContainer
+			.createEl("button", { text: "Save locally" })
+			.addEventListener("click", () => {
+				this.resolve(false);
+				this.close();
+			});
+	}
+
+	onClose() {
+		this.resolve(false);
+		this.contentEl.empty();
+	}
 }
 
 function getByPath(obj: unknown, path: string): unknown {
@@ -46,18 +83,32 @@ function getByPath(obj: unknown, path: string): unknown {
 export default class ImageUploaderPlugin extends Plugin {
 	settings: ImageUploaderSettings = DEFAULT_SETTINGS;
 
-	private filterUploadable = (file: File): boolean => {
+	private shouldIntercept = (file: File): boolean => {
 		if (isImageFile(file)) return true;
-		if (isPdfFile(file) && this.settings.enablePdfUpload) return true;
+		if (isPdfFile(file) && this.settings.pdfHandling !== "default") return true;
 		return false;
 	};
 
-	private dropHandler = (evt: DragEvent): void => {
-		const files = evt.dataTransfer?.files;
-		if (!files || files.length === 0) return;
+	private askPdfUpload(): Promise<boolean> {
+		return new Promise((resolve) => {
+			new PdfUploadModal(this.app, resolve).open();
+		});
+	}
 
-		const uploadable = Array.from(files).filter(this.filterUploadable);
-		if (uploadable.length === 0) return;
+	private async savePdfLocally(file: File, editor: Editor) {
+		const arrayBuffer = await file.arrayBuffer();
+		const activeFile = this.app.workspace.getActiveFile();
+		const path = await this.app.fileManager.getAvailablePathForAttachment(file.name, activeFile?.path);
+		const created = await this.app.vault.createBinary(path, arrayBuffer);
+		editor.replaceSelection(`![[${created.name}]]`);
+	}
+
+	private handleFiles(evt: Event, fileList: FileList | undefined | null): void {
+		if (!fileList || fileList.length === 0) return;
+
+		const allFiles = Array.from(fileList);
+		const intercepted = allFiles.filter(this.shouldIntercept);
+		if (intercepted.length === 0) return;
 
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) return;
@@ -65,23 +116,33 @@ export default class ImageUploaderPlugin extends Plugin {
 		evt.preventDefault();
 		evt.stopPropagation();
 
-		void this.uploadFiles(uploadable, view.editor);
+		const images = intercepted.filter(isImageFile);
+		const pdfs = intercepted.filter(isPdfFile);
+
+		void (async () => {
+			if (images.length > 0) {
+				await this.uploadFiles(images, view.editor);
+			}
+			for (const pdf of pdfs) {
+				let shouldUpload = this.settings.pdfHandling === "upload";
+				if (this.settings.pdfHandling === "ask") {
+					shouldUpload = await this.askPdfUpload();
+				}
+				if (shouldUpload) {
+					await this.uploadFile(pdf, view.editor);
+				} else {
+					await this.savePdfLocally(pdf, view.editor);
+				}
+			}
+		})();
+	}
+
+	private dropHandler = (evt: DragEvent): void => {
+		this.handleFiles(evt, evt.dataTransfer?.files);
 	};
 
 	private pasteHandler = (evt: ClipboardEvent): void => {
-		const files = evt.clipboardData?.files;
-		if (!files || files.length === 0) return;
-
-		const uploadable = Array.from(files).filter(this.filterUploadable);
-		if (uploadable.length === 0) return;
-
-		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (!view) return;
-
-		evt.preventDefault();
-		evt.stopPropagation();
-
-		void this.uploadFiles(uploadable, view.editor);
+		this.handleFiles(evt, evt.clipboardData?.files);
 	};
 
 	async onload() {
@@ -238,13 +299,16 @@ class ImageUploaderSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Upload PDF files")
-			.setDesc("When enabled, PDF files are uploaded to the API and inserted as a link. When disabled, PDFs are handled by Obsidian's default behavior.")
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.enablePdfUpload)
+			.setName("PDF handling")
+			.setDesc("Choose how PDF files are handled when dropped or pasted.")
+			.addDropdown((dropdown) =>
+				dropdown
+					.addOption("default", "Save locally (default)")
+					.addOption("upload", "Always upload to API")
+					.addOption("ask", "Ask each time")
+					.setValue(this.plugin.settings.pdfHandling)
 					.onChange(async (value) => {
-						this.plugin.settings.enablePdfUpload = value;
+						this.plugin.settings.pdfHandling = value as PdfHandling;
 						await this.plugin.saveSettings();
 					})
 			);
