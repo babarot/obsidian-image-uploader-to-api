@@ -1,0 +1,9 @@
+# config file for the tagpr in git config format
+# vim: ft=ini
+[tagpr]
+	releaseBranch = main
+	vPrefix = false
+	versionFile = package.json,manifest.json
+	changelog = true
+	majorLabels = release/major
+	minorLabels = release/minor

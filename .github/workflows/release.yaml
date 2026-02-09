@@ -2,28 +2,55 @@ name: Release
 
 on:
   push:
-    tags:
-      - "*"
+    branches:
+      - main
 
-permissions:
-  contents: write
+concurrency:
+  group: ${{ github.workflow }}
 
 jobs:
-  build:
+  tagpr:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run tagpr
+        uses: Songmu/tagpr@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: run-tagpr
+    outputs:
+      tag: ${{ steps.run-tagpr.outputs.tag }}
 
-      - uses: actions/setup-node@v4
+  release:
+    if: needs.tagpr.outputs.tag != ''
+    needs: tagpr
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tagpr.outputs.tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: "18.x"
 
       - run: npm install
       - run: npm run build
 
-      - uses: softprops/action-gh-release@v2
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.tagpr.outputs.tag }}
           files: |
             main.js
             manifest.json
