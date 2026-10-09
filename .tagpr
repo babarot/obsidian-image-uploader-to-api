@@ -5,5 +5,5 @@
 	vPrefix = false
 	versionFile = package.json,manifest.json
 	changelog = true
-	majorLabels = release/major
-	minorLabels = release/minor
+	majorLabels = kind/breaking-change
+	minorLabels = kind/feature,kind/deprecation
